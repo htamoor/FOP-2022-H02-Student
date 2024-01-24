@@ -1,5 +1,6 @@
 package h02;
 
+import fopbot.Direction;
 import fopbot.Robot;
 import fopbot.World;
 
@@ -22,6 +23,27 @@ public class Main {
     World.setVisible(true);
     System.out.println("Size of world: " + cols + "x" + rows);
     // Hier programmieren
+
+    // Task 1
+    Robot[] allRobots = initializeRobots(cols, rows);
+    int[] paces = initializePaces(allRobots);
+
+
+    // Task 3
+    int loopCounter = 0;
+    while (allRobots.length > 0) {
+      loopCounter++;
+      moveForward(allRobots, paces);
+      if (allRobots.length > 2) {
+        int[] distinctInts = generateThreeDistinctInts(allRobots);
+        swapPaces(paces, distinctInts[0],distinctInts[1], distinctInts[2]);
+      }
+      if (loopCounter % NUMBER_OF_STEPS_BETWEEN_REDUCTIONS == 0) {
+        int deleteIndex = ThreadLocalRandom.current().nextInt(allRobots.length);
+        allRobots = reduceRobots(allRobots, deleteIndex);
+        paces = reducePaces(paces, deleteIndex);
+      }
+    }
   }
 
   /**
@@ -32,7 +54,18 @@ public class Main {
    * @return correctly initialized allRobots array (i.e. correct size, correct positions, correct directions)
    */
   public static Robot[] initializeRobots(int cols, int rows) {
-    return null;
+    int minimum = Math.min(cols, rows);
+    Robot[] allRobots = new Robot[minimum % 2 == 0 ? minimum : minimum - 1];
+    for (int i = 0; i < allRobots.length; i++) {
+      if (i < allRobots.length / 2) {
+        allRobots[i] = new Robot(i, i, Direction.RIGHT, 1000);
+      } else {
+        allRobots[i] = new Robot(i, i, Direction.LEFT, 1000);
+      }
+    }
+
+    return allRobots;
+
   }
 
   /**
@@ -45,7 +78,12 @@ public class Main {
    * @return correctly initialized paces array (i.e. correct size, filled w/ random integers from [1...5])
    */
   public static int[] initializePaces(Robot[] allRobots) {
-    return null;
+    int[] paces = new int[allRobots.length];
+    for (int i = 0; i < paces.length; i++) {
+      paces[i] = ThreadLocalRandom.current().nextInt(1, 6);
+    }
+
+    return paces;
   }
 
   /**
@@ -55,6 +93,30 @@ public class Main {
    * @param paces     corresponding paces array to allRobots
    */
   public static void moveForward(Robot[] allRobots, int[] paces) {
+    for (int i = 0; i < allRobots.length; i++) {
+      for (int j = 0; j < paces[i]; j++) {
+        if (!ifCanMove(allRobots[i])) {
+          allRobots[i].turnLeft();
+        } else {
+          allRobots[i].move();
+        }
+      }
+    }
+  }
+
+  private static boolean ifCanMove(Robot robot) {
+    switch (robot.getDirection()) {
+      case LEFT:
+        return robot.getX() != 0;
+      case DOWN:
+        return robot.getY() != 0;
+      case UP:
+        return robot.getY() != World.getHeight() - 1;
+      case RIGHT:
+        return robot.getX() != World.getWidth() - 1;
+      default:
+        throw new IllegalArgumentException("Ups...Somthing went Wrong!");
+    }
   }
 
   /**
@@ -64,7 +126,19 @@ public class Main {
    * @return array containing three distinct integers as described above
    */
   public static int[] generateThreeDistinctInts(Robot[] allRobots) {
-    return null;
+    int i1 = ThreadLocalRandom.current().nextInt(allRobots.length);
+    int i2 = ThreadLocalRandom.current().nextInt(allRobots.length);
+    int i3 = ThreadLocalRandom.current().nextInt(allRobots.length);
+
+    while (i1 == i2 || i1 == i3 || i2 == i3) {
+      i1 = ThreadLocalRandom.current().nextInt(allRobots.length);
+      i2 = ThreadLocalRandom.current().nextInt(allRobots.length);
+      i3 = ThreadLocalRandom.current().nextInt(allRobots.length);
+    }
+
+
+
+    return new int[] {i1, i2, i3};
   }
 
   /**
@@ -79,7 +153,25 @@ public class Main {
    * @return sorted array of i1, i2, i3 in ascending order
    */
   public static int[] orderThreeInts(int i1, int i2, int i3) {
-    return null;
+    if (i2 < i1) {
+      int tmp = i2;
+      i2 = i1;
+      i1 = tmp;
+    }
+
+    if (i3 < i1) {
+      int tmp = i3;
+      i3 = i1;
+      i1 = tmp;
+    }
+
+    if (i3 < i2) {
+      int tmp = i3;
+      i3 = i2;
+      i2 = tmp;
+    }
+
+    return new int[] {i1, i2, i3};
   }
 
   /**
@@ -96,7 +188,16 @@ public class Main {
    * @return paces array with identical entries as before, but in order as described in exercise sheet
    */
   public static int[] swapPaces(int[] paces, int i1, int i2, int i3) {
-    return null;
+    int[] orderedI = orderThreeInts(i1, i2, i3);
+    i1 = orderedI[0];
+    i2 = orderedI[1];
+    i3 = orderedI[2];
+
+    int[] orderedPaces = orderThreeInts(paces[i1], paces[i2], paces[i3]);
+    paces[i1] = orderedPaces[0];
+    paces[i2] = orderedPaces[1];
+    paces[i3] = orderedPaces[2];
+    return paces;
   }
 
   /**
@@ -111,7 +212,17 @@ public class Main {
    * @return reduced array (as described above)
    */
   public static Robot[] reduceRobots(Robot[] allRobots, int deleteIndex) {
-    return null;
+    Robot[] newRobots = new Robot[allRobots.length - 1];
+    int counter = 0;
+    for (int i = 0; i < allRobots.length; i++) {
+      if (i == deleteIndex) {
+        continue;
+      }
+      newRobots[counter] = allRobots[i];
+      counter++;
+    }
+
+    return newRobots;
   }
 
   /**
@@ -126,6 +237,16 @@ public class Main {
    * @return reduced array (as described above)
    */
   public static int[] reducePaces(int[] paces, int deleteIndex) {
-    return null;
+    int[] newPaces = new int[paces.length - 1];
+    int counter = 0;
+    for (int i = 0; i < paces.length; i++) {
+      if (i == deleteIndex) {
+        continue;
+      }
+      newPaces[counter] = paces[i];
+      counter++;
+    }
+
+    return newPaces;
   }
 }
